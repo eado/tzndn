@@ -24,6 +24,7 @@ import (
 	"github.com/named-data/ndnd/std/security/trust_schema"
 	"github.com/named-data/ndnd/std/types/optional"
 	"github.com/named-data/ndnd/std/utils"
+    config "github.com/eado/tzndn/config"
 )
 
 //go:embed schema.tlv
@@ -33,8 +34,6 @@ var SchemaBytes []byte
 var testbedRootCert []byte
 var testbedRootName, _ = enc.NameFromStr("/ndn/KEY/%27%C4%B2%2A%9F%7B%81%27/ndn/v=1651246789556")
 var testbedPrefix = enc.Name{enc.NewGenericComponent("ndn")}
-var multicastPrefix, _ = enc.NameFromStr("/ndn/multicast")
-var repoName, _ = enc.NameFromStr("/ndnd/ucla/repo")
 
 func getTrustConfig(keychain ndn.KeyChain) (trust *security.TrustConfig, err error) {
 	schema, err := trust_schema.NewLvsSchema(SchemaBytes)
@@ -173,7 +172,7 @@ func (a *App) ConnectTestbed() error {
 		return nil
 	}
 
-	endpoint := "suns.cs.ucla.edu:6363"
+	endpoint := config.Endpoint 
 
 	face := face.NewStreamFace("udp", endpoint, false)
 
@@ -324,11 +323,11 @@ func (a *App) NotifyRepo(client ndn.Client, group enc.Name, dataPrefix enc.Name)
 			HistorySnapshot: &spec_repo.HistorySnapshotConfig{
 				Threshold: 100,
 			},
-            MulticastPrefix: &spec.NameContainer{Name: multicastPrefix},
+            MulticastPrefix: &spec.NameContainer{Name: config.MulticastPrefix},
 		},
 	}
 	client.ExpressCommand(
-		repoName,
+		config.RepoName,
 		dataPrefix.Append(enc.NewKeywordComponent("repo-cmd")),
 		repoCmd.Encode(),
 		func(w enc.Wire, err error) {

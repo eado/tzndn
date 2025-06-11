@@ -9,6 +9,7 @@ import (
 	_ "unsafe"
 
 	app "github.com/eado/tzndn/app"
+	config "github.com/eado/tzndn/config"
 	enc "github.com/named-data/ndnd/std/encoding"
 	"github.com/named-data/ndnd/std/log"
 	"github.com/named-data/ndnd/std/ndn"
@@ -16,8 +17,6 @@ import (
 	ndn_sync "github.com/named-data/ndnd/std/sync"
 )
 
-var multicastPrefix, _ = enc.NameFromStr("/ndn/multicast")
-var tzdbPrefix, _ = enc.NameFromStr("tz")
 var email string
 
 func main() {
@@ -32,19 +31,14 @@ func main() {
 	log.Default().SetLevel(log.LevelError)
 
 	// Determine which files to process
-	var err (error)
 	var filesToProcess []string
 	if nameArg == "all" {
-		filesToProcess, err = getFilesInTzDir()
-		if err != nil {
-			log.Fatal(nil, "Unable to read tz directory", "err", err)
-			return
-		}
+		filesToProcess = config.Files
 	} else {
 		filesToProcess = []string{nameArg}
 	}
 
-    fmt.Fprintln(os.Stderr, "*** TZDB publisher started")
+	fmt.Fprintln(os.Stderr, "*** TZDB publisher started")
 	fmt.Fprintf(os.Stderr, "*** Processing files: %v\n", filesToProcess)
 	fmt.Fprintln(os.Stderr, "*** Press Ctrl+C to exit.")
 
@@ -63,21 +57,6 @@ func main() {
 
 }
 
-func getFilesInTzDir() ([]string, error) {
-	files, err := os.ReadDir("./tz")
-	if err != nil {
-		return nil, err
-	}
-
-	var result []string
-	for _, file := range files {
-		if !file.IsDir() {
-			result = append(result, file.Name())
-		}
-	}
-	return result, nil
-}
-
 //go:linkname onInterest github.com/named-data/ndnd/std/object.(*Client).onInterest
 func onInterest(*object.Client, ndn.InterestHandlerArgs)
 
@@ -90,7 +69,7 @@ func processFile(fileName string) error {
 	client := a.GetClient()
 
 	// Read file data
-	filePath := filepath.Join("./tz", fileName)
+	filePath := filepath.Join(config.InputDir, fileName)
 	data, err := os.ReadFile(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to read file %s: %v", filePath, err)
@@ -99,7 +78,7 @@ func processFile(fileName string) error {
 	// Create client name
 	clientName, _ := enc.NameFromStr(fmt.Sprintf("%s", fileName))
 
-	tzdbName := a.GetTestbedKey().KeyName().Prefix(-2).Append(tzdbPrefix...)
+	tzdbName := a.GetTestbedKey().KeyName().Prefix(-2).Append(config.TzdbPrefix...)
 
 	// Create ALO instance
 	alo, err := ndn_sync.NewSvsALO(ndn_sync.SvsAloOpts{
@@ -110,9 +89,9 @@ func processFile(fileName string) error {
 		},
 		Snapshot: &ndn_sync.SnapshotNodeHistory{
 			Client:    client,
-			Threshold: 100,
+			Threshold: 1,
 		},
-		MulticastPrefix: multicastPrefix,
+		MulticastPrefix: config.MulticastPrefix,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to create ALO for %s: %v", fileName, err)
@@ -143,9 +122,15 @@ func processFile(fileName string) error {
 		return fmt.Errorf("failed to start ALO for %s: %v", fileName, err)
 	}
 
-	_, _, err = alo.Publish(enc.Wire{[]byte(data)})
-	if err != nil {
-		return fmt.Errorf("failed to publish for %s: %v", fileName, err)
+	chunkSize := 1000
+	for i := 0; i < len(data); i += chunkSize {
+		end := min(i + chunkSize, len(data))
+		chunk := data[i:end]
+
+		_, _, err := alo.Publish(enc.Wire{chunk})
+		if err != nil {
+			return fmt.Errorf("failed to publish chunk at offset %d for %s: %v", i, fileName, err)
+		}
 	}
 
 	fmt.Printf("*** Published: %s\n", fileName)

@@ -16,12 +16,9 @@ import (
 	"github.com/named-data/ndnd/std/ndn/svs_ps"
 
 	// "github.com/named-data/ndnd/std/sync"
+	config "github.com/eado/tzndn/config"
 	ndn_sync "github.com/named-data/ndnd/std/sync"
 )
-
-var groupPrefix, _ = enc.NameFromStr("/ndn/edu/ucla/cs/omar/tz")
-var multicastPrefix, _ = enc.NameFromStr("/ndn/multicast")
-var files = []string{"america", "europe"}
 
 func main() {
 	if len(os.Args) < 3 {
@@ -36,7 +33,7 @@ func main() {
 
 	var filesToSub ([]string)
 	if nameArg == "all" {
-		filesToSub = files
+		filesToSub = config.Files
 	} else {
 		filesToSub = []string{nameArg}
 	}
@@ -60,13 +57,13 @@ func main() {
 		Name: clientName,
 		Svs: ndn_sync.SvSyncOpts{
 			Client:      client,
-			GroupPrefix: groupPrefix,
+			GroupPrefix: config.GroupPrefix,
 		},
 		Snapshot: &ndn_sync.SnapshotNodeHistory{
 			Client:    client,
-			Threshold: 100,
+			Threshold: 1000,
 		},
-		MulticastPrefix: multicastPrefix,
+		MulticastPrefix: config.MulticastPrefix,
 	})
 	if err != nil {
 		log.Error(nil, "failed to create ALO", err)
@@ -84,6 +81,8 @@ func main() {
 		log.Error(nil, "failed to start ALO for", err)
 	}
 
+	latestBoot := make(map[string]int)
+
 	alo.SetOnPublisher(func(publisher enc.Name) {
 		if slices.Contains(filesToSub, publisher.String()[1:]) {
 			alo.SubscribePublisher(publisher, func(pub ndn_sync.SvsPub) {
@@ -92,18 +91,32 @@ func main() {
 				if pub.IsSnapshot {
 					snapshot, err := svs_ps.ParseHistorySnap(enc.NewWireView(pub.Content), true)
 					if err != nil {
-						panic(err) // we encode this, so this never happens
+						panic(err)
 					}
-                    content = snapshot.Entries[len(snapshot.Entries)-1].Content.Join()
+					content = snapshot.Entries[len(snapshot.Entries)-1].Content.Join()
 				} else {
-                    content = pub.Bytes()
-                }
+					content = pub.Bytes()
+				}
 
-				fmt.Println("*** Updating ", publisher.String())
-				filePath := filepath.Join("./tzdist", publisher.String())
-				os.Mkdir("./tzdist", 0777)
-				os.Create(filePath)
-				os.WriteFile(filePath, content, 0777)
+				filePath := filepath.Join(config.OutputDir, publisher.String())
+				os.Mkdir(config.OutputDir, 0744)
+				
+
+				if latestBoot[publisher.String()] < int(pub.BootTime) {
+					latestBoot[publisher.String()] = int(pub.BootTime)
+                    os.Create(filePath)
+				}
+
+                if latestBoot[publisher.String()] == int(pub.BootTime) {
+                    fmt.Println("*** Updating ", publisher.String(), " seq ", pub.SeqNum)
+
+					f, err := os.OpenFile(filePath, os.O_APPEND|os.O_WRONLY, 0644)
+					if err != nil {
+						return
+					}
+					f.Write(content)
+                    f.Close()
+				}
 			})
 		}
 	})

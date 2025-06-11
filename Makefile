@@ -1,12 +1,12 @@
 default: build
 
-schema: app/schema.trust
+schema: 
 	cd app && ./compile
 
 consumer:
-	go build ./cmd/consumer
+	go build -o ./bin/consumer/consumer ./cmd/consumer
 
 producer:
-	go build ./cmd/producer
+	go build -o ./bin/producer/producer ./cmd/producer
 
-build: schema consumer producer
+build: consumer producer

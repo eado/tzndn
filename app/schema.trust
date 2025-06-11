@@ -1,7 +1,7 @@
 #KEY: "KEY"/_/_/_
 #KEY: "KEY"/_/_
 
-#TZ: "tz"
+#TZ: tz
 
 #testbed_site_cert: /"ndn"/_/_/#KEY <= #testbed_root_cert
 #testbed_root_cert: /"ndn"/#KEY
