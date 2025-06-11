@@ -1,0 +1,18 @@
+#/bin/bash
+if [ ! -d venv ]; then
+    python3 -m venv venv
+    source venv/bin/activate
+
+    pip install 'python-ndn[dev] @ git+https://github.com/named-data/python-ndn@64938def54afd11f9766243b19bf06e6a2ccd163'
+fi
+
+. ./venv/bin/activate
+python > schema.tlv <<EOF
+import sys
+
+import ndn.app_support.light_versec
+
+lvs_text = open("schema.trust", "r").read()
+lvs_model = ndn.app_support.light_versec.compile_lvs(lvs_text)
+sys.stdout.buffer.write(lvs_model.encode())
+EOF

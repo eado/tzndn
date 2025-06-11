@@ -1,0 +1,36 @@
+#KEY: "KEY"/_/_/_
+#KEY: "KEY"/_/_
+
+#TZ: "tz"
+
+#testbed_site_cert: /"ndn"/_/_/#KEY <= #testbed_root_cert
+#testbed_root_cert: /"ndn"/#KEY
+
+#publisher: "ndn"/"edu"/"ucla"/"cs"/"eggert"
+#publisher: "ndn"/"edu"/"ucla"/"cs"/"omar"
+
+#pub_cert: #publisher/#KEY <= #testbed_site_cert | #testbed_root_cert
+#user_cert: #user/#KEY <= #testbed_site_cert | #testbed_root_cert
+
+#user_sync: /"ndn"/"multicast"/#publisher/#TZ/_ <= #user_cert
+#user_sync: /"ndn"/"multicast"/#publisher/#TZ/_/_ <= #user_cert
+#user_sync: /"ndn"/"multicast"/#publisher/#TZ/_/_/_ <= #user_cert
+#consumer: #publisher/#TZ/"consumer"/_ <= #user_cert
+#consumer: #publisher/#TZ/"consumer"/_/_ <= #user_cert
+#consumer: #publisher/#TZ/"consumer"/_/_/_ <= #user_cert
+
+
+#data: #publisher/tz/_ <= #pub_cert
+#data: #publisher/tz/_/_ <= #pub_cert
+#data: #publisher/tz/_/_/_ <= #pub_cert
+
+
+#user: "ndn"/user10
+#user: "ndn"/user20/user21
+#user: "ndn"/user30/user31/user32
+#user: "ndn"/user40/user41/user42/user43
+#user: "ndn"/user50/user51/user52/user53/user54
+#user: "ndn"/user60/user61/user62/user63/user64/user65
+
+
+
