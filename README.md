@@ -10,7 +10,7 @@ Both producers and consumers will have to bootstrap on to the [NDN testbed](http
 
 A producer will run the `producer` executable. Producers may choose which files (in some TZ directory) to publish. 
 
-A consumer will (as a daemon) run the `consumer` executable. Consumers may choose which files to subscribe to (e.g., only subscribing to `northamerica` if you live in Los Angeles). This will write files to some output directory, in which users may install the timezone info using the `zic` executable.
+A consumer will (as a daemon) run the `consumer` executable. Consumers may choose which files to subscribe to (e.g., only subscribing to `northamerica` if you live in Los Angeles). This will write files to some output directory, in which users may compile the timezone info using the `zic` executable.
 
 Downstream distributors (e.g., Unicode CLDR) may choose to act as both consumers and producers. On a new release, CLDR may choose to republish their own files under some prefix.
 
