@@ -21,7 +21,7 @@ var email string
 
 func main() {
 	if len(os.Args) < 3 {
-		fmt.Fprintf(os.Stderr, "Usage: %s <NAME|all> <EMAIL>\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "Usage: %s <NAME> <EMAIL>\n", os.Args[0])
 		os.Exit(1)
 	}
 
@@ -30,26 +30,15 @@ func main() {
 
 	log.Default().SetLevel(log.LevelError)
 
-	// Determine which files to process
-	var filesToProcess []string
-	if nameArg == "all" {
-		filesToProcess = config.Files
-	} else {
-		filesToProcess = []string{nameArg}
-	}
-
 	fmt.Fprintln(os.Stderr, "*** TZDB publisher started")
-	fmt.Fprintf(os.Stderr, "*** Processing files: %v\n", filesToProcess)
+	fmt.Fprintf(os.Stderr, "*** Running as distributor: %v\n", nameArg)
 	fmt.Fprintln(os.Stderr, "*** Press Ctrl+C to exit.")
 
-	// Process each file
-	for _, fileName := range filesToProcess {
-		err := processFile(fileName)
-		if err != nil {
-			log.Error(nil, "Failed to process file", "file", fileName, "err", err)
-			continue
-		}
-	}
+    err := processFile(nameArg)
+    if err != nil {
+        log.Error(nil, "Failed to process", err)
+        return
+    }
 
 	sigchan := make(chan os.Signal, 1)
 	signal.Notify(sigchan, os.Interrupt, syscall.SIGTERM)
@@ -69,7 +58,7 @@ func processFile(fileName string) error {
 	client := a.GetClient()
 
 	// Read file data
-	filePath := filepath.Join(config.InputDir, fileName)
+	filePath := filepath.Join(config.InputDir, "tzdata.zi.xz")
 	data, err := os.ReadFile(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to read file %s: %v", filePath, err)

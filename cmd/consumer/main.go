@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-	"slices"
 
 	"path/filepath"
 	"syscall"
@@ -22,7 +21,7 @@ import (
 
 func main() {
 	if len(os.Args) < 3 {
-		fmt.Fprintf(os.Stderr, "Usage: %s <NAME|all> <EMAIL>\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "Usage: %s <NAME> <EMAIL>\n", os.Args[0])
 		os.Exit(1)
 	}
 
@@ -31,15 +30,8 @@ func main() {
 
 	log.Default().SetLevel(log.LevelError)
 
-	var filesToSub ([]string)
-	if nameArg == "all" {
-		filesToSub = config.Files
-	} else {
-		filesToSub = []string{nameArg}
-	}
-
 	fmt.Fprintln(os.Stderr, "*** TZDB client started")
-	fmt.Fprintf(os.Stderr, "*** Processing files: %v\n", nameArg)
+	fmt.Fprintf(os.Stderr, "*** Subscribing to distributor: %v\n", nameArg)
 	fmt.Fprintln(os.Stderr, "*** Press Ctrl+C to exit.")
 
 	// Create a new engine
@@ -84,7 +76,7 @@ func main() {
 	latestBoot := make(map[string]int)
 
 	alo.SetOnPublisher(func(publisher enc.Name) {
-		if slices.Contains(filesToSub, publisher.String()[1:]) {
+		if publisher.String()[1:] == nameArg {
 			alo.SubscribePublisher(publisher, func(pub ndn_sync.SvsPub) {
 				var content []byte
 
